@@ -1,0 +1,80 @@
+  <!DOCTYPE html>
+  <html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <title>GameZone - Accueil</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; }
+      .game-card { padding: 10px; margin: 10px 0; }
+      #logoutBtn { margin-left: 10px; }
+    </style>
+  </head>
+  <body>
+    <h1>🎮 Bienvenue sur GameZone</h1>
+
+    <div id="loginInfo">
+      <a href="login.html" id="loginLink">Se connecter</a>
+      <span id="connectedAs" style="display:none;"></span>
+      <button id="logoutBtn" style="display:none;" onclick="logout()">Se déconnecter</button>
+    </div>
+
+    <h2>Liste des jeux disponibles :</h2>
+    <div id="gameList" class="game-grid">Chargement...</div>
+
+    <script>
+      function checkLogin() {
+        const token = localStorage.getItem('token');
+        const username = localStorage.getItem('username');
+
+        if (token && username) {
+          document.getElementById('loginLink').style.display = 'none';
+          document.getElementById('logoutBtn').style.display = 'inline';
+          document.getElementById('connectedAs').style.display = 'inline';
+          document.getElementById('connectedAs').innerText = 'Connecté en tant que ' + username;
+        }
+      }
+
+      function logout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        window.location.reload();
+      }
+
+      function loadGames() {
+        fetch('http://localhost:3000/games')
+          .then(res => res.json())
+          .then(games => {
+            const container = document.getElementById('gameList');
+            container.innerHTML = '';
+
+            if (games.length === 0) {
+              container.innerText = 'Aucun jeu disponible.';
+              return;
+            }
+
+            games.forEach(game => {
+              const card = document.createElement('div');
+              card.className = 'game-card';
+              card.innerHTML = `
+                <img src="${game.image_url || 'https://via.placeholder.com/600x300?text=Pas+de+visuel'}" alt="${game.title}" class="game-card-image" />
+                <div class="game-card-content">
+                  <h3>${game.title}</h3>
+                  <p>${game.description || 'Aucune description.'}</p>
+                  <a href="game.html?id=${game.id}">Voir les commentaires</a>
+               </div>
+  `;
+              container.appendChild(card);
+            });
+          })
+          .catch(() => {
+            document.getElementById('gameList').innerText = 'Erreur lors du chargement des jeux.';
+          });
+      }
+
+      checkLogin();
+      loadGames();
+    </script>
+
+  </body>
+  </html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Connexion / Inscription</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    input, button { margin: 5px 0; display: block; }
+    .section { margin-bottom: 40px; border: 1px solid #ccc; padding: 15px; }
+  </style>
+</head>
+<body>
+
+  <h1>🔐 Connexion</h1>
+  <div class="section">
+    <input type="text" id="loginUsername" placeholder="Nom d'utilisateur">
+    <input type="password" id="loginPassword" placeholder="Mot de passe">
+    <button onclick="login()">Se connecter</button>
+    <p id="loginStatus" style="color:red;"></p>
+  </div>
+
+  <h1>🆕 Créer un compte</h1>
+  <div class="section">
+    <input type="text" id="registerUsername" placeholder="Nom d'utilisateur">
+    <input type="password" id="registerPassword" placeholder="Mot de passe">
+    <button onclick="register()">S'inscrire</button>
+    <p id="registerStatus" style="color:red;"></p>
+  </div>
+
+  <a href="index.html">← Retour à l’accueil</a>
+
+  <script>
+    function login() {
+      const username = document.getElementById('loginUsername').value;
+      const password = document.getElementById('loginPassword').value;
+
+      fetch('http://localhost:3000/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('username', username);
+          window.location.href = 'index.html';
+        } else {
+          document.getElementById('loginStatus').innerText = data.message || 'Erreur de connexion';
+        }
+      })
+      .catch(() => {
+        document.getElementById('loginStatus').innerText = 'Erreur serveur';
+      });
+    }
+
+    function register() {
+      const username = document.getElementById('registerUsername').value;
+      const password = document.getElementById('registerPassword').value;
+
+      fetch('http://localhost:3000/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('username', username);
+          window.location.href = 'index.html';
+        } else {
+          document.getElementById('registerStatus').innerText = data.message || 'Erreur d’inscription';
+        }
+      })
+      .catch(() => {
+        document.getElementById('registerStatus').innerText = 'Erreur serveur';
+      });
+    }
+  </script>
+
+</body>
+</html>

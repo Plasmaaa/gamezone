@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Page du jeu</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+    h1 { color: #444; }
+    #gameImage { max-width: 100%; margin: 10px 0; display: none; }
+    .comment { margin-left: 10px; font-size: 0.95em; }
+    #comments ul { list-style-type: none; padding: 0; }
+    #comments li { margin-bottom: 5px; background: #232323; padding: 8px; border-radius: 5px; }
+    textarea { width: 100%; padding: 10px; margin-top: 10px; background-color: #232323;border-radius: 5px; border: #232323; }
+    button { padding: 8px 12px; margin-top: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <p><a href="index.html">⬅️ Retour à l'accueil</a></p>
+
+  <h1 id="gameTitle">Chargement du jeu...</h1>
+  <p id="gameDescription"></p>
+  <img id="gameImage" src="" alt="Image du jeu">
+  <p><b>Date de sortie :</b> <span id="gameDate"></span></p>
+
+  <div id="editGameSection"></div>
+
+  <hr>
+  <h2>💬 Commentaires</h2>
+  <div id="comments">Chargement des commentaires...</div>
+
+  <form id="commentForm">
+    <textarea id="commentContent" rows="3" placeholder="Votre commentaire..." required></textarea><br>
+    <button type="submit">Envoyer</button>
+  </form>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const gameId = params.get("id");
+
+    const token = localStorage.getItem("token");
+
+    // Chargement des infos du jeu
+    function loadGame() {
+      fetch(`http://localhost:3000/games/${gameId}`)
+        .then(res => res.json())
+        .then(game => {
+          document.getElementById("gameTitle").innerText = game.title;
+          document.getElementById("gameDescription").innerText = game.description || "Pas de description";
+          document.getElementById("gameDate").innerText = game.release_date || "Inconnue";
+          if (game.image_url) {
+            const img = document.getElementById("gameImage");
+            img.src = game.image_url;
+            img.style.display = 'block';
+          }
+
+          // Si connecté, vérifier rôle
+          if (token) {
+            fetch("http://localhost:3000/auth/me", {
+              headers: { Authorization: "Bearer " + token }
+            })
+            .then(res => res.json())
+            .then(user => {
+              if (user.role === "admin") {
+                document.getElementById("editGameSection").innerHTML =
+                  `<p><a href="edit-game.html?id=${gameId}">✏️ Modifier ce jeu</a></p>`;
+              }
+            });
+          }
+        });
+    }
+
+    // Chargement des commentaires
+    function loadComments() {
+      fetch(`http://localhost:3000/comments/${gameId}`)
+        .then(res => res.json())
+        .then(comments => {
+          const container = document.getElementById("comments");
+          if (comments.length === 0) {
+            container.innerHTML = "<i>Aucun commentaire pour ce jeu.</i>";
+          } else {
+            container.innerHTML = "<ul>" + comments.map(c =>
+              `<li><b>${c.username ?? "Anonyme"}:</b> ${c.content}</li>`
+            ).join("") + "</ul>";
+          }
+        });
+    }
+
+    // Envoi d'un commentaire
+    document.getElementById("commentForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const content = document.getElementById("commentContent").value;
+
+      if (!token) {
+        alert("Vous devez être connecté pour commenter.");
+        return;
+      }
+
+      fetch("http://localhost:3000/comments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ game_id: gameId, content })
+      })
+      .then(res => {
+        if (res.ok) {
+          document.getElementById("commentContent").value = "";
+          loadComments();
+        } else {
+          alert("Erreur lors de l'envoi du commentaire");
+        }
+      });
+    });
+
+    // Initialisation
+    loadGame();
+    loadComments();
+  </script>
+
+</body>
+</html>
